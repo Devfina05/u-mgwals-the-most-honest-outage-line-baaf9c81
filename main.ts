@@ -18,7 +18,7 @@
 // time: the text is fixed in this file, so the two grading runs
 // produce the same line byte for byte.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 // Sentence 1: name what is down, and admit the outage also took
@@ -57,7 +57,18 @@ function main(): void {
   const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
   const line = buildLine();
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, "entry.txt"), line, "utf8");
+  const outPath = join(outDir, "entry.txt");
+  writeFileSync(outPath, line, "utf8");
+  // Read the file back and confirm it holds exactly the line we
+  // built: the grader runs this program twice, and both runs must
+  // produce the same bytes. A mismatch here fails loudly instead
+  // of silently submitting a different text.
+  const written = readFileSync(outPath, "utf8");
+  if (written !== line) {
+    throw new Error(
+      `entry.txt round-trip mismatch: wrote ${line.length} chars, read back ${written.length}`,
+    );
+  }
 }
 
 main();
